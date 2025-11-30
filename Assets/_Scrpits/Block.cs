@@ -13,37 +13,32 @@ public class Block : MonoBehaviour
     [SerializeField] private TextMeshPro _text;
 
     private Material _mat;
-    private Color _baseColor;   // màu gốc theo value
+    private Color _baseColor;
 
     public Vector2 Pos => transform.position;
 
-    // -----------------------------------------
-    // INIT (KHÔNG dùng BlockType)
-    // -----------------------------------------
+    // INIT
     public void Init(int value)
     {
         Value = value;
 
-        // Clone material để DOTween an toàn
+        // clone material
         if (_renderer != null)
         {
             _mat = new Material(_renderer.material);
             _renderer.material = _mat;
         }
 
-        // Set màu theo giá trị
+        // màu theo giá trị
         _baseColor = GetColor(Value);
         if (_renderer != null) _renderer.color = _baseColor;
 
-        // Set text
+        // text
         if (_text != null) _text.text = Value.ToString();
 
         PlaySpawnAnimation();
     }
 
-    // -----------------------------------------
-    // GÁN NODE
-    // -----------------------------------------
     public void SetBlock(Node node)
     {
         if (Node != null)
@@ -53,9 +48,6 @@ public class Block : MonoBehaviour
         Node.OccupiedBlock = this;
     }
 
-    // -----------------------------------------
-    // MERGE CONTROL
-    // -----------------------------------------
     public void MergeBlock(Block blockToMergeWith)
     {
         MergingBlock = blockToMergeWith;
@@ -65,9 +57,9 @@ public class Block : MonoBehaviour
     public bool CanMerge(int value) =>
         Value == value && !Merging && MergingBlock == null;
 
-    // -----------------------------------------
+    // ---------------------------------------------------------
     // ANIMATIONS
-    // -----------------------------------------
+    // ---------------------------------------------------------
     public void PlaySpawnAnimation()
     {
         transform.localScale = Vector3.zero;
@@ -87,23 +79,22 @@ public class Block : MonoBehaviour
 
         _mat.DOColor(Color.white, "_Color", 0.1f).OnComplete(() =>
         {
-            // revert lại màu gốc
             _mat.DOColor(_baseColor, "_Color", 0.15f);
         });
     }
 
-    // BlockManager sẽ gọi Destroy sau ~0.15s
     public void PlayDestroyFade()
     {
         if (_mat == null) return;
         _mat.DOFade(0f, 0.12f);
     }
 
-    // -----------------------------------------
-    // COLOR TABLE (chuẩn 2048 nhưng auto expand)
-    // -----------------------------------------
+    // ---------------------------------------------------------
+    // COLOR SYSTEM (vô hạn, không đen)
+    // ---------------------------------------------------------
     private Color GetColor(int value)
     {
+        // màu chuẩn của 2048
         switch (value)
         {
             case 2: return new Color32(238, 228, 218, 255);
@@ -119,8 +110,19 @@ public class Block : MonoBehaviour
             case 2048: return new Color32(237, 194, 46, 255);
         }
 
-        // nếu > 2048 → màu cao hơn (tự tính theo hàm)
-        float t = Mathf.Clamp01(Mathf.Log(value / 2048f + 1f));
-        return Color.Lerp(new Color32(237, 194, 46, 255), new Color32(60, 60, 60, 255), t);
+        int level = (int)Mathf.Log(value, 2);        
+        float t = Mathf.InverseLerp(12, 18, level); // 4096–262144 ( tôi sẽ phát triến sau nếu đến ngưỡng )
+        t = Mathf.Clamp01(t);
+        //vàng → cam → đỏ → tím → xanh dương...
+        Color c1 = new Color32(237, 194, 46, 255);
+        Color c2 = new Color32(180, 80, 80, 255); 
+        Color c3 = new Color32(120, 60, 150, 255);
+        Color c4 = new Color32(60, 120, 200, 255);
+        if (t < 0.33f)
+            return Color.Lerp(c1, c2, t / 0.33f);
+        if (t < 0.66f)
+            return Color.Lerp(c2, c3, (t - 0.33f) / 0.33f);
+            return Color.Lerp(c3, c4, (t - 0.66f) / 0.34f);
     }
+
 }

@@ -8,6 +8,7 @@ using UnityEngine.InputSystem;
 
 public class GameManager : MonoBehaviour
 {
+    [Header("Spawn")]
     [SerializeField] private int _width = 4;
     [SerializeField] private int _height = 4;
     [SerializeField] private Node _nodePrefab;
@@ -15,6 +16,7 @@ public class GameManager : MonoBehaviour
     [SerializeField] private SpriteRenderer _boardRenderer;
     [SerializeField] private float _travelTime = 0.2f;
 
+    [Header("Score")]
     [SerializeField] private int Score;
     [SerializeField] private int BestScore;
     public TextMeshProUGUI scoreText;
@@ -23,7 +25,11 @@ public class GameManager : MonoBehaviour
     private Vector2 startPos;
     private float minDistance = 80f;
 
+    [Header("UI Screens")]
     [SerializeField] private GameObject _winScreen, _loseScreen;
+    [SerializeField] private GameObject gameOverPanel;
+    [SerializeField] private GameObject winPanel;
+    [SerializeField] private bool _winShown = false;
 
     private List<Node> _nodes;
     private List<Block> _blocks;
@@ -91,7 +97,7 @@ public class GameManager : MonoBehaviour
         Vector2 pos = Vector2.zero;
         bool released = false;
 
-        // Touch
+            // Touch
         if (Touchscreen.current != null &&
             Touchscreen.current.primaryTouch.press.isPressed)
         {
@@ -171,9 +177,15 @@ public class GameManager : MonoBehaviour
             return;
         }
 
-        ChangeState(_blocks.Any(b => b.Value == 2048)
-            ? GameState.Win
-            : GameState.WaitingInput);
+        if (!_winShown && _blocks.Any(b => b.Value == 2048))
+        {
+            _winShown = true;
+            winPanel.SetActive(true);
+            _state = GameState.WaitingInput;
+            return;
+        }
+
+        ChangeState(GameState.WaitingInput);
     }
 
     void SpawnBlock(Node node, int value)
@@ -315,6 +327,22 @@ public class GameManager : MonoBehaviour
             bestScoreText.text = Score.ToString();
             PlayerPrefs.SetInt("BestScore", Score);
         }
+    }
+    // -------------------------
+    // UI Panel
+    // -------------------------
+    public void __________ContinueGame()
+    {
+        winPanel.SetActive(false);
+        _state = GameState.WaitingInput;
+        Debug.Log("Continue clicked.");
+    }
+
+    public void __________RestartGame()
+    {
+        UnityEngine.SceneManagement.SceneManager.LoadScene(
+            UnityEngine.SceneManagement.SceneManager.GetActiveScene().buildIndex
+        );
     }
 
     Node GetNodeAtPosition(Vector2 pos)
