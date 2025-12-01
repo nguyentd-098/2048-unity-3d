@@ -17,10 +17,13 @@ public class Block : MonoBehaviour
 
     public Vector2 Pos => transform.position;
 
+    private AudioManager audioManager;
+
     // INIT
-    public void Init(int value)
+    public void Init(int value, AudioManager am)
     {
         Value = value;
+        audioManager = am;
 
         // clone material
         if (_renderer != null)
@@ -37,6 +40,9 @@ public class Block : MonoBehaviour
         if (_text != null) _text.text = Value.ToString();
 
         PlaySpawnAnimation();
+
+        // null-safe play
+        audioManager?.PlaySpawn();
     }
 
     public void SetBlock(Node node)
@@ -52,6 +58,8 @@ public class Block : MonoBehaviour
     {
         MergingBlock = blockToMergeWith;
         blockToMergeWith.Merging = true;
+
+        audioManager?.PlayMerge();
     }
 
     public bool CanMerge(int value) =>

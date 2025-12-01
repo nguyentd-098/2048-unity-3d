@@ -35,17 +35,26 @@ public class GameManager : MonoBehaviour
     private List<Block> _blocks;
     private GameState _state;
     private int _round;
+    public AudioManager audioManager;
 
     void Start()
     {
         BestScore = PlayerPrefs.GetInt("BestScore", 0);
         bestScoreText.text = BestScore.ToString();
-        //// ---------- Vuốt ---------------
+
+        // ---------- Vuốt ---------------
         FindFirstObjectByType<SwipeInput>().OnSwipe = dir =>
         {
             if (_state == GameState.WaitingInput)
                 Shift(dir);
         };
+
+        // Try to auto-find AudioManager if not set in inspector
+        if (audioManager == null)
+        {
+            audioManager = FindFirstObjectByType<AudioManager>();   
+        }
+
         ChangeState(GameState.GenerateLevel);
     }
 
@@ -191,7 +200,7 @@ public class GameManager : MonoBehaviour
     void SpawnBlock(Node node, int value)
     {
         var block = Instantiate(_blockPrefab, node.Pos, Quaternion.identity);
-        block.Init(value);
+        block.Init(value, audioManager);
         block.SetBlock(node);
         _blocks.Add(block);
     }
@@ -202,6 +211,7 @@ public class GameManager : MonoBehaviour
     void Shift(Vector2 dir)
     {
         ChangeState(GameState.Moving);
+        audioManager?.PlayMove();
 
         IEnumerable<Block> ordered = _blocks.OrderBy(b => b.Pos.x).ThenBy(b => b.Pos.y);
 
@@ -279,6 +289,7 @@ public class GameManager : MonoBehaviour
     {
         if (merging == null) return;
 
+        audioManager?.PlayMerge();
         Node node = main.Node;
 
         // Remove old blocks from Node
@@ -291,7 +302,7 @@ public class GameManager : MonoBehaviour
 
         // create merged block
         var newBlock = Instantiate(_blockPrefab, node.Pos, Quaternion.identity);
-        newBlock.Init(newValue);
+        newBlock.Init(newValue, audioManager);
         newBlock.SetBlock(node);
         _blocks.Add(newBlock);
 
