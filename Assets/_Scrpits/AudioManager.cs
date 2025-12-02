@@ -2,7 +2,8 @@
 
 public class AudioManager : MonoBehaviour
 {
-    [Header("Audio Source")]
+    [Header("Audio Sources")]
+    public AudioSource musicSource;
     public AudioSource sfxSource;
 
     [Header("SFX Clips")]
@@ -12,18 +13,37 @@ public class AudioManager : MonoBehaviour
     public AudioClip winClip;
     public AudioClip gameOverClip;
 
-    public void PlaySpawn() => Play(spawnClip);
-    public void PlayMerge() => Play(mergeClip);
-    public void PlayMove() => Play(moveClip);
-    public void PlayWin() => Play(winClip);
-    public void PlayGameOver() => Play(gameOverClip);
+    [Header("Audio States")]
+    public bool isMusicOn = true;
+    public bool isSfxOn = true;
 
-    private void Play(AudioClip clip)
+    // --- MUSIC ---
+    public void ToggleMusic()
     {
-        if (clip == null) return;
-        if (sfxSource == null) return;
+        isMusicOn = !isMusicOn;
+        if (musicSource != null)
+            musicSource.mute = !isMusicOn;
+        Debug.Log("Music: " + (isMusicOn ? "ON" : "OFF"));
+    }
 
-        sfxSource.PlayOneShot(clip);
+    // --- SFX ---
+    public void ToggleSFX()
+    {
+        isSfxOn = !isSfxOn;
+        Debug.Log("SFX: " + (isSfxOn ? "ON" : "OFF"));
+    }
+
+    public void PlaySpawn() => Play(sfxSource, spawnClip);
+    public void PlayMerge() => Play(sfxSource, mergeClip);
+    public void PlayMove() => Play(sfxSource, moveClip);
+    public void PlayWin() => Play(sfxSource, winClip);
+    public void PlayGameOver() => Play(sfxSource, gameOverClip);
+
+    private void Play(AudioSource source, AudioClip clip)
+    {
+        if (clip == null || source == null || !isSfxOn) return;
+
+        source.PlayOneShot(clip);
         Debug.Log("SFX: " + clip.name);
     }
 }
