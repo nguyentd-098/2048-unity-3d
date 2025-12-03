@@ -49,7 +49,6 @@ public class GameManager : MonoBehaviour
                 Shift(dir);
         };
 
-        // Try to auto-find AudioManager if not set in inspector
         if (audioManager == null)
         {
             audioManager = FindFirstObjectByType<AudioManager>();   
@@ -142,10 +141,7 @@ public class GameManager : MonoBehaviour
             else Shift(Vector2.down);
         }
     }
-
-        // -------------------------
         // GRID
-        // -------------------------
     void GenerateGrid()
     {
         _round = 0;
@@ -166,10 +162,7 @@ public class GameManager : MonoBehaviour
         Camera.main.transform.position = new Vector3(center.x, center.y, -10);
         ChangeState(GameState.SpawningBlocks);
     }
-
-    // -------------------------
     // SPAWN BLOCK && Win/Lose
-    // -------------------------
     void SpawnBlocks(int amount)
     {
         var freeNodes = _nodes
@@ -204,10 +197,7 @@ public class GameManager : MonoBehaviour
         block.SetBlock(node);
         _blocks.Add(block);
     }
-
-    // -------------------------
     // MOVEMENT + MERGE FIXED
-    // -------------------------
     void Shift(Vector2 dir)
     {
         ChangeState(GameState.Moving);
@@ -281,10 +271,7 @@ public class GameManager : MonoBehaviour
             ChangeState(GameState.SpawningBlocks);
         });
     }
-
-    // -------------------------
-    // CLEAN MERGE LOGIC 
-    // -------------------------
+    // CLEAN MERGE LOGIC với VFX
     private void HandleMerge(Block main, Block merging)
     {
         if (merging == null) return;
@@ -313,6 +300,9 @@ public class GameManager : MonoBehaviour
         newBlock.PlayMergeAnimation();
         newBlock.PlayHighlight();
 
+        // PHÁT VFX KHI MERGE
+        newBlock.PlayMergeVFX();
+
         // fade old blocks
         main.PlayDestroyFade();
         merging.PlayDestroyFade();
@@ -323,10 +313,7 @@ public class GameManager : MonoBehaviour
         _blocks.Remove(main);
         _blocks.Remove(merging);
     }
-
-    // -------------------------
     // SCORE SYSTEM
-    // -------------------------
     void AddScore(int value)
     {
         Score += value;
@@ -339,9 +326,7 @@ public class GameManager : MonoBehaviour
             PlayerPrefs.SetInt("BestScore", Score);
         }
     }
-    // -------------------------
     // UI Panel
-    // -------------------------
     public void __________ContinueGame()
     {
         winPanel.SetActive(false);

@@ -134,8 +134,15 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   Value: 0
+  Node: {fileID: 0}
+  MergingBlock: {fileID: 0}
+  Merging: 0
   _renderer: {fileID: 3234986304286849179}
   _text: {fileID: 5540064379260674941}
+  vfxSmall: {fileID: 7059244812680251311, guid: feca28422fc9a5240993eed790df0180, type: 3}
+  vfxMedium: {fileID: 8293869836834216953, guid: 8293690d7899953419fb457436cdb93e, type: 3}
+  vfxLarge: {fileID: 8272294297163203850, guid: e265cb67d36d9ac4e95e48e289d615e8, type: 3}
+  vfxUltra: {fileID: 3912242300694112348, guid: 9e59038de397032448cf9b329c247777, type: 3}
 --- !u!1 &7113162272090666324
 GameObject:
   m_ObjectHideFlags: 0
