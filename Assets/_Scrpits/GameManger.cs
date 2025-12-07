@@ -141,7 +141,6 @@ public class GameManager : MonoBehaviour
             else Shift(Vector2.down);
         }
     }
-        // GRID
     void GenerateGrid()
     {
         _round = 0;
@@ -162,7 +161,8 @@ public class GameManager : MonoBehaviour
         Camera.main.transform.position = new Vector3(center.x, center.y, -10);
         ChangeState(GameState.SpawningBlocks);
     }
-    // SPAWN BLOCK && Win/Lose
+
+    // Spawn && Win/Lose
     void SpawnBlocks(int amount)
     {
         var freeNodes = _nodes
@@ -197,7 +197,7 @@ public class GameManager : MonoBehaviour
         block.SetBlock(node);
         _blocks.Add(block);
     }
-    // MOVEMENT + MERGE FIXED
+    // Movement & Merging
     void Shift(Vector2 dir)
     {
         ChangeState(GameState.Moving);
@@ -271,7 +271,7 @@ public class GameManager : MonoBehaviour
             ChangeState(GameState.SpawningBlocks);
         });
     }
-    // CLEAN MERGE LOGIC với VFX
+    // Clean Megere
     private void HandleMerge(Block main, Block merging)
     {
         if (merging == null) return;

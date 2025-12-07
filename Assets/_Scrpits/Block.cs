@@ -60,7 +60,6 @@ public class Block : MonoBehaviour
     public bool CanMerge(int value) =>
         Value == value && !Merging && MergingBlock == null;
 
-    // ANIMATIONS
     public void PlaySpawnAnimation()
     {
         transform.localScale = Vector3.zero;
@@ -73,7 +72,6 @@ public class Block : MonoBehaviour
             .Append(transform.DOScale(1.2f, 0.12f))
             .Append(transform.DOScale(1f, 0.12f));
     }
-
     public void PlayHighlight()
     {
         if (_mat == null) return;
@@ -88,8 +86,6 @@ public class Block : MonoBehaviour
         if (_mat == null) return;
         _mat.DOFade(0f, 0.12f);
     }
-
-    // VFX SYSTEM - PHÁT HIỆU ỨNG KHI MERGE
     public void PlayMergeVFX()
     {
         GameObject vfxPrefab = GetVFXByValue(Value);
@@ -112,7 +108,6 @@ public class Block : MonoBehaviour
             return vfxSmall;
         return null;
     }
-    // COLOR SYSTEM
     private Color GetColor(int value)
     {
         switch (value)
