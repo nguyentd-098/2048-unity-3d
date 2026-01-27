@@ -1,47 +1,52 @@
-﻿using UnityEngine;
-using DG.Tweening;
+﻿using DG.Tweening;
+using System;
 using TMPro;
+using UnityEditor.Experimental.GraphView;
+using UnityEngine;
 
-public class Block : MonoBehaviour
+// ============================================
+// BLOCK - Refactored theo SOLID
+// ============================================
+
+public class Block : MonoBehaviour, IMergeable, IMovable
 {
-    public int Value;
-    public Node Node;
-    public Block MergingBlock;
-    public bool Merging;
-
+    [Header("Components")]
     [SerializeField] private SpriteRenderer _renderer;
     [SerializeField] private TextMeshPro _text;
 
-    private Material _mat;
+    private Material _material;
     private Color _baseColor;
+    private BlockConfig _config;
+    private IAudioService _audioService;
 
-    public Vector2 Pos => transform.position;
+    // IMergeable
+    public int Value { get; private set; }
+    public Block MergingBlock { get; private set; }
+    public bool IsMergeTarget { get; private set; }
 
-    private AudioManager audioManager;
+    // IMovable
+    public Vector2 Position => transform.position;
 
-    [Header("VFX By Level")]
-    public GameObject vfxSmall;   // 2 – 64
-    public GameObject vfxMedium;  // 128 – 512
-    public GameObject vfxLarge;   // 1024 – 4096
-    public GameObject vfxUltra;   // 8192 trở lên
+    // Node reference
+    public Node Node { get; private set; }
 
-
-    // INIT
-    public void Init(int value, AudioManager am)
+    /// <summary>
+    /// Khởi tạo block với dependencies (DIP)
+    /// </summary>
+    public void Initialize(int value, BlockConfig config, IAudioService audioService)
     {
         Value = value;
-        audioManager = am;
-        if (_renderer != null)
-        {
-            _mat = new Material(_renderer.material);
-            _renderer.material = _mat;
-        }
-        _baseColor = GetColor(Value);
-        if (_renderer != null) _renderer.color = _baseColor;
-        if (_text != null) _text.text = Value.ToString();
+        _config = config;
+        _audioService = audioService;
+
+        SetupVisuals();
         PlaySpawnAnimation();
-        audioManager?.PlaySpawn();
+        _audioService?.PlaySpawn();
     }
+
+    /// <summary>
+    /// Gán block vào node
+    /// </summary>
     public void SetBlock(Node node)
     {
         if (Node != null)
@@ -50,15 +55,59 @@ public class Block : MonoBehaviour
         Node = node;
         Node.OccupiedBlock = this;
     }
-    public void MergeBlock(Block blockToMergeWith)
+
+    /// <summary>
+    /// Kiểm tra có thể merge không
+    /// </summary>
+    public bool CanMerge(int value)
     {
-        MergingBlock = blockToMergeWith;
-        blockToMergeWith.Merging = true;
-        audioManager?.PlayMerge();
+        return Value == value && !IsMergeTarget && MergingBlock == null;
     }
 
-    public bool CanMerge(int value) =>
-        Value == value && !Merging && MergingBlock == null;
+    /// <summary>
+    /// Được gọi khi merge xảy ra
+    /// </summary>
+    public void OnMerge()
+    {
+        _audioService?.PlayMerge();
+    }
+
+    /// <summary>
+    /// Set block sẽ merge vào
+    /// </summary>
+    public void SetMergingBlock(Block target)
+    {
+        MergingBlock = target;
+    }
+
+    /// <summary>
+    /// Đánh dấu block là target của merge
+    /// </summary>
+    public void SetAsMergeTarget()
+    {
+        IsMergeTarget = true;
+    }
+
+    /// <summary>
+    /// Reset trạng thái merge
+    /// </summary>
+    public void ResetMergeState()
+    {
+        IsMergeTarget = false;
+        MergingBlock = null;
+    }
+
+    /// <summary>
+    /// Di chuyển đến vị trí (IMovable)
+    /// </summary>
+    public void MoveTo(Vector2 target, float duration, Action onComplete = null)
+    {
+        transform.DOMove(target, duration).OnComplete(() => onComplete?.Invoke());
+    }
+
+    // ============================================
+    // ANIMATIONS
+    // ============================================
 
     public void PlaySpawnAnimation()
     {
@@ -71,73 +120,61 @@ public class Block : MonoBehaviour
         DOTween.Sequence()
             .Append(transform.DOScale(1.2f, 0.12f))
             .Append(transform.DOScale(1f, 0.12f));
+
+        PlayHighlight();
+        PlayMergeVFX();
     }
+
     public void PlayHighlight()
     {
-        if (_mat == null) return;
+        if (_material == null) return;
 
-        _mat.DOColor(Color.white, "_Color", 0.1f).OnComplete(() =>
+        _material.DOColor(Color.white, "_Color", 0.1f).OnComplete(() =>
         {
-            _mat.DOColor(_baseColor, "_Color", 0.15f);
+            _material.DOColor(_baseColor, "_Color", 0.15f);
         });
     }
-    public void PlayDestroyFade()
+
+    public void PlayDestroyAnimation()
     {
-        if (_mat == null) return;
-        _mat.DOFade(0f, 0.12f);
+        if (_material == null) return;
+        _material.DOFade(0f, 0.12f);
     }
+
     public void PlayMergeVFX()
     {
-        GameObject vfxPrefab = GetVFXByValue(Value);
+        if (_config == null) return;
 
+        GameObject vfxPrefab = _config.GetVFXForValue(Value);
         if (vfxPrefab != null)
         {
             GameObject vfx = Instantiate(vfxPrefab, transform.position, Quaternion.identity);
             Destroy(vfx, 2f);
         }
     }
-    private GameObject GetVFXByValue(int value)
+
+    // ============================================
+    // PRIVATE METHODS
+    // ============================================
+
+    private void SetupVisuals()
     {
-        if (value >= 8192)
-            return vfxUltra;
-        else if (value >= 1024)
-            return vfxLarge;
-        else if (value >= 128)
-            return vfxMedium;
-        else if (value >= 2)
-            return vfxSmall;
-        return null;
-    }
-    private Color GetColor(int value)
-    {
-        switch (value)
+        if (_config == null) return;
+
+        // Setup material
+        if (_renderer != null)
         {
-            case 2: return new Color32(238, 228, 218, 255);
-            case 4: return new Color32(237, 224, 200, 255);
-            case 8: return new Color32(242, 177, 121, 255);
-            case 16: return new Color32(245, 149, 99, 255);
-            case 32: return new Color32(246, 124, 95, 255);
-            case 64: return new Color32(246, 94, 59, 255);
-            case 128: return new Color32(237, 207, 114, 255);
-            case 256: return new Color32(237, 204, 97, 255);
-            case 512: return new Color32(237, 200, 80, 255);
-            case 1024: return new Color32(237, 197, 63, 255);
-            case 2048: return new Color32(237, 194, 46, 255);
+            _material = new Material(_renderer.material);
+            _renderer.material = _material;
         }
 
-        int level = (int)Mathf.Log(value, 2);
-        float t = Mathf.InverseLerp(12, 18, level);
-        t = Mathf.Clamp01(t);
+        // Setup color (OCP - từ config)
+        _baseColor = _config.GetColorForValue(Value);
+        if (_renderer != null)
+            _renderer.color = _baseColor;
 
-        Color c1 = new Color32(237, 194, 46, 255);
-        Color c2 = new Color32(180, 80, 80, 255);
-        Color c3 = new Color32(120, 60, 150, 255);
-        Color c4 = new Color32(60, 120, 200, 255);
-
-        if (t < 0.33f)
-            return Color.Lerp(c1, c2, t / 0.33f);
-        if (t < 0.66f)
-            return Color.Lerp(c2, c3, (t - 0.33f) / 0.33f);
-        return Color.Lerp(c3, c4, (t - 0.66f) / 0.34f);
+        // Setup text
+        if (_text != null)
+            _text.text = Value.ToString();
     }
 }
