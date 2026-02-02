@@ -12,8 +12,63 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 9628ab90859ba3b4a94f157e0d376016, type: 3}
   m_Name: BlockConfigData
   m_EditorClassIdentifier: 
-  themes: []
-  defaultVfxSmall: {fileID: 0}
-  defaultVfxMedium: {fileID: 0}
-  defaultVfxLarge: {fileID: 0}
-  defaultVfxUltra: {fileID: 0}
+  themes:
+  - value: 2
+    color: {r: 0.93333334, g: 0.89411765, b: 0.85490197, a: 0}
+    vfxPrefab: {fileID: 3630950076977652491, guid: d0ee11761a4137645a9a1b0bd1ea7e53, type: 3}
+    spawnAnimDuration: 0
+    mergeAnimDuration: 0
+  - value: 4
+    color: {r: 0.8301887, g: 0.6911712, b: 0.5521538, a: 0}
+    vfxPrefab: {fileID: 3630950076977652491, guid: d0ee11761a4137645a9a1b0bd1ea7e53, type: 3}
+    spawnAnimDuration: 0
+    mergeAnimDuration: 0
+  - value: 8
+    color: {r: 0.38074043, g: 0.8679245, b: 0.54268104, a: 0}
+    vfxPrefab: {fileID: 3630950076977652491, guid: d0ee11761a4137645a9a1b0bd1ea7e53, type: 3}
+    spawnAnimDuration: 0
+    mergeAnimDuration: 0
+  - value: 16
+    color: {r: 0.6740388, g: 0.9339623, b: 0.8734591, a: 0}
+    vfxPrefab: {fileID: 3630950076977652491, guid: d0ee11761a4137645a9a1b0bd1ea7e53, type: 3}
+    spawnAnimDuration: 0
+    mergeAnimDuration: 0
+  - value: 32
+    color: {r: 0.61089355, g: 0.7782796, b: 0.9056604, a: 0}
+    vfxPrefab: {fileID: 3630950076977652491, guid: d0ee11761a4137645a9a1b0bd1ea7e53, type: 3}
+    spawnAnimDuration: 0
+    mergeAnimDuration: 0
+  - value: 64
+    color: {r: 0.81365675, g: 0.9339623, b: 0.5771182, a: 0}
+    vfxPrefab: {fileID: 3630950076977652491, guid: d0ee11761a4137645a9a1b0bd1ea7e53, type: 3}
+    spawnAnimDuration: 0
+    mergeAnimDuration: 0
+  - value: 128
+    color: {r: 0.59003764, g: 0.8490566, b: 0.49261305, a: 0}
+    vfxPrefab: {fileID: 5415600515078142850, guid: 20f6d30e8d4a1bc4fad9592968ad851a, type: 3}
+    spawnAnimDuration: 0
+    mergeAnimDuration: 0
+  - value: 256
+    color: {r: 0.8867924, g: 0.51450694, b: 0.56086636, a: 0}
+    vfxPrefab: {fileID: 5415600515078142850, guid: 20f6d30e8d4a1bc4fad9592968ad851a, type: 3}
+    spawnAnimDuration: 0
+    mergeAnimDuration: 0
+  - value: 512
+    color: {r: 0.841511, g: 0.8773585, b: 0.56697226, a: 0}
+    vfxPrefab: {fileID: 5415600515078142850, guid: 20f6d30e8d4a1bc4fad9592968ad851a, type: 3}
+    spawnAnimDuration: 0
+    mergeAnimDuration: 0
+  - value: 1024
+    color: {r: 0.8396226, g: 0.69902545, b: 0.5584282, a: 0}
+    vfxPrefab: {fileID: 8272294297163203850, guid: e265cb67d36d9ac4e95e48e289d615e8, type: 3}
+    spawnAnimDuration: 0
+    mergeAnimDuration: 0
+  - value: 2048
+    color: {r: 0.8773585, g: 0.16140087, b: 0.8239469, a: 0}
+    vfxPrefab: {fileID: 8272294297163203850, guid: e265cb67d36d9ac4e95e48e289d615e8, type: 3}
+    spawnAnimDuration: 0
+    mergeAnimDuration: 0
+  defaultVfxSmall: {fileID: 3630950076977652491, guid: d0ee11761a4137645a9a1b0bd1ea7e53, type: 3}
+  defaultVfxMedium: {fileID: 5415600515078142850, guid: 20f6d30e8d4a1bc4fad9592968ad851a, type: 3}
+  defaultVfxLarge: {fileID: 8272294297163203850, guid: e265cb67d36d9ac4e95e48e289d615e8, type: 3}
+  defaultVfxUltra: {fileID: 8004061199188420018, guid: 7a7018ab3efb8694ea96c76b9c16b46f, type: 3}
