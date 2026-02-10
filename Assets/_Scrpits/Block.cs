@@ -1,8 +1,7 @@
-﻿using DG.Tweening;
-using System;
+﻿using UnityEngine;
+using DG.Tweening;
 using TMPro;
-using UnityEditor.Experimental.GraphView;
-using UnityEngine;
+using System;
 
 // ============================================
 // BLOCK - Refactored theo SOLID
@@ -38,6 +37,12 @@ public class Block : MonoBehaviour, IMergeable, IMovable
         Value = value;
         _config = config;
         _audioService = audioService;
+
+        // DEBUG: Check config
+        if (_config == null)
+        {
+            Debug.LogError("[Block] BlockConfig is NULL! Assign BlockConfig in BlockSpawner.");
+        }
 
         SetupVisuals();
         PlaySpawnAnimation();
@@ -159,22 +164,62 @@ public class Block : MonoBehaviour, IMergeable, IMovable
 
     private void SetupVisuals()
     {
-        if (_config == null) return;
-
         // Setup material
         if (_renderer != null)
         {
             _material = new Material(_renderer.material);
             _renderer.material = _material;
         }
+        else
+        {
+            Debug.LogError("[Block] SpriteRenderer is NULL! Assign in Block prefab.");
+        }
 
-        // Setup color (OCP - từ config)
-        _baseColor = _config.GetColorForValue(Value);
+        // Setup color
+        if (_config != null)
+        {
+            _baseColor = _config.GetColorForValue(Value);
+        }
+        else
+        {
+            // FALLBACK: Màu mặc định nếu không có config
+            Debug.LogWarning($"[Block] No BlockConfig! Using fallback color for value {Value}");
+            _baseColor = GetFallbackColor(Value);
+        }
+
         if (_renderer != null)
             _renderer.color = _baseColor;
 
         // Setup text
         if (_text != null)
+        {
             _text.text = Value.ToString();
+        }
+        else
+        {
+            Debug.LogError("[Block] TextMeshPro is NULL! Assign in Block prefab.");
+        }
+    }
+
+    /// <summary>
+    /// Màu fallback nếu không có BlockConfig
+    /// </summary>
+    private Color GetFallbackColor(int value)
+    {
+        switch (value)
+        {
+            case 2: return new Color32(238, 228, 218, 255);
+            case 4: return new Color32(237, 224, 200, 255);
+            case 8: return new Color32(242, 177, 121, 255);
+            case 16: return new Color32(245, 149, 99, 255);
+            case 32: return new Color32(246, 124, 95, 255);
+            case 64: return new Color32(246, 94, 59, 255);
+            case 128: return new Color32(237, 207, 114, 255);
+            case 256: return new Color32(237, 204, 97, 255);
+            case 512: return new Color32(237, 200, 80, 255);
+            case 1024: return new Color32(237, 197, 63, 255);
+            case 2048: return new Color32(237, 194, 46, 255);
+            default: return Color.gray;
+        }
     }
 }

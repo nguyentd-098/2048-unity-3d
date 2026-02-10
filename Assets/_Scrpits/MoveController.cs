@@ -1,9 +1,8 @@
-﻿using DG.Tweening;
-using System;
+﻿using UnityEngine;
 using System.Collections.Generic;
 using System.Linq;
-using UnityEditor.Experimental.GraphView;
-using UnityEngine;
+using DG.Tweening;
+using System;
 
 // ============================================
 // MOVE CONTROLLER - Tuân thủ SRP
@@ -14,6 +13,9 @@ public class MoveController : MonoBehaviour
 {
     [Header("Animation")]
     [SerializeField] private float _travelTime = 0.2f;
+
+    [Header("Debug")]
+    [SerializeField] private bool _showDebugLog = true;
 
     private IGridManager _gridManager;
     private IAudioService _audioService;
@@ -43,22 +45,47 @@ public class MoveController : MonoBehaviour
     /// </summary>
     public void Move(Vector2 direction, List<Block> blocks)
     {
+        if (_showDebugLog)
+            Debug.Log($"[MoveController] Move called. Direction: {direction}, Blocks: {blocks.Count}");
+
+        if (blocks == null || blocks.Count == 0)
+        {
+            Debug.LogError("[MoveController] Blocks list is NULL or EMPTY!");
+            return;
+        }
+
         _audioService?.PlayMove();
 
         // Reset trạng thái merge
         foreach (var block in blocks)
         {
+            if (block == null)
+            {
+                Debug.LogError("[MoveController] Found NULL block in list!");
+                continue;
+            }
             block.ResetMergeState();
         }
 
         // Sắp xếp blocks theo hướng di chuyển
         var orderedBlocks = GetOrderedBlocks(blocks, direction);
 
+        if (_showDebugLog)
+            Debug.Log($"[MoveController] Ordered {orderedBlocks.Count()} blocks");
+
         // Tính toán vị trí mới
+        int moveCount = 0;
         foreach (var block in orderedBlocks)
         {
+            Vector2 oldPos = block.Position;
             CalculateNewPosition(block, direction);
+
+            if (block.Position != oldPos)
+                moveCount++;
         }
+
+        if (_showDebugLog)
+            Debug.Log($"[MoveController] {moveCount} blocks will move");
 
         // Animate di chuyển
         AnimateMovement(orderedBlocks);
@@ -118,7 +145,11 @@ public class MoveController : MonoBehaviour
     /// </summary>
     private void AnimateMovement(IEnumerable<Block> blocks)
     {
+        if (_showDebugLog)
+            Debug.Log($"[MoveController] AnimateMovement started");
+
         var sequence = DOTween.Sequence();
+        int animCount = 0;
 
         foreach (var block in blocks)
         {
@@ -126,8 +157,17 @@ public class MoveController : MonoBehaviour
                 ? block.MergingBlock.Node.Pos
                 : block.Node.Pos;
 
+            if (_showDebugLog && block.transform.position != (Vector3)targetPos)
+            {
+                Debug.Log($"[MoveController] Animating block {block.Value} from {block.transform.position} to {targetPos}");
+                animCount++;
+            }
+
             sequence.Join(block.transform.DOMove(targetPos, _travelTime));
         }
+
+        if (_showDebugLog)
+            Debug.Log($"[MoveController] {animCount} animations added to sequence");
 
         sequence.OnComplete(() => HandleMerges(blocks.ToList()));
     }

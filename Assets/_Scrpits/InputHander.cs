@@ -1,103 +1,175 @@
 ﻿using UnityEngine;
-using UnityEngine.InputSystem;
 using System;
 
 // ============================================
-// INPUT HANDLER - Tuân thủ SRP
-// Chỉ xử lý input
+// TOUCH INPUT HANDLER - Chỉ cho Mobile/Simulator
+// Dùng Input.touches - ĐƠN GIẢN NHẤT!
 // ============================================
 
-public class InputHandler : MonoBehaviour, IInputService
+public class TouchInputHandler : MonoBehaviour, IInputService
 {
     [Header("Swipe Settings")]
-    [SerializeField] private float _minSwipeDistance = 80f;
+    [SerializeField] private float _minSwipeDistance = 50f;
+
+    [Header("Debug")]
+    [SerializeField] private bool _showDebugLog = true;
 
     private Vector2 _startPos;
     private bool _isEnabled = true;
 
     public event Action<Vector2> OnSwipe;
 
+    void Start()
+    {
+        Debug.Log("==============================================");
+        Debug.Log("[TouchInput] READY - Swipe on screen to move!");
+        Debug.Log("==============================================");
+    }
+
     void Update()
     {
         if (!_isEnabled) return;
 
-        HandleInput();
+        // MOBILE: Touch input
+        if (Input.touchCount > 0)
+        {
+            HandleTouch();
+        }
+        // EDITOR/SIMULATOR: Mouse as touch
+        else
+        {
+            HandleMouseAsTouch();
+        }
     }
 
-    /// <summary>
-    /// Bật input
-    /// </summary>
     public void Enable()
     {
         _isEnabled = true;
+        Debug.Log("[TouchInput] ✅ ENABLED - Ready for swipe");
     }
 
-    /// <summary>
-    /// Tắt input
-    /// </summary>
     public void Disable()
     {
         _isEnabled = false;
+        Debug.Log("[TouchInput] ❌ DISABLED");
     }
 
-    /// <summary>
-    /// Xử lý input (touch hoặc mouse)
-    /// </summary>
-    private void HandleInput()
-    {
-        Vector2 currentPos = Vector2.zero;
-        bool pressed = false;
-        bool released = false;
+    // ============================================
+    // TOUCH INPUT (Real Device)
+    // ============================================
 
-        // Touch input
-        if (Touchscreen.current != null && Touchscreen.current.primaryTouch.press.isPressed)
+    private void HandleTouch()
+    {
+        Touch touch = Input.GetTouch(0);
+
+        if (touch.phase == TouchPhase.Began)
         {
-            if (Touchscreen.current.primaryTouch.press.wasPressedThisFrame)
-                _startPos = Touchscreen.current.primaryTouch.position.ReadValue();
+            _startPos = touch.position;
 
-            currentPos = Touchscreen.current.primaryTouch.position.ReadValue();
-            released = Touchscreen.current.primaryTouch.press.wasReleasedThisFrame;
+            if (_showDebugLog)
+                Debug.Log($"[TouchInput] 👆 Touch START at {_startPos}");
         }
-        // Mouse input (fallback)
-        else if (Mouse.current != null)
+        else if (touch.phase == TouchPhase.Ended)
         {
-            if (Mouse.current.leftButton.wasPressedThisFrame)
-                _startPos = Mouse.current.position.ReadValue();
+            Vector2 endPos = touch.position;
 
-            currentPos = Mouse.current.position.ReadValue();
-            released = Mouse.current.leftButton.wasReleasedThisFrame;
+            if (_showDebugLog)
+                Debug.Log($"[TouchInput] 👆 Touch END at {endPos}");
+
+            ProcessSwipe(_startPos, endPos);
+        }
+    }
+
+    // ============================================
+    // MOUSE AS TOUCH (Editor/Simulator)
+    // ============================================
+
+    private void HandleMouseAsTouch()
+    {
+        // Mouse down = Touch began
+        if (Input.GetMouseButtonDown(0))
+        {
+            _startPos = Input.mousePosition;
+
+            if (_showDebugLog)
+                Debug.Log($"[TouchInput] 🖱️ Mouse DOWN at {_startPos}");
         }
 
-        if (!released) return;
+        // Mouse up = Touch ended
+        if (Input.GetMouseButtonUp(0))
+        {
+            Vector2 endPos = Input.mousePosition;
 
-        DetectSwipe(currentPos);
+            if (_showDebugLog)
+                Debug.Log($"[TouchInput] 🖱️ Mouse UP at {endPos}");
+
+            ProcessSwipe(_startPos, endPos);
+        }
     }
 
-    /// <summary>
-    /// Phát hiện hướng swipe
-    /// </summary>
-    private void DetectSwipe(Vector2 endPos)
+    // ============================================
+    // SWIPE PROCESSING
+    // ============================================
+
+    private void ProcessSwipe(Vector2 start, Vector2 end)
     {
-        Vector2 delta = endPos - _startPos;
+        Vector2 delta = end - start;
+        float distance = delta.magnitude;
 
-        if (delta.magnitude < _minSwipeDistance) return;
+        Debug.Log($"[TouchInput] 📏 Swipe distance: {distance:F1} pixels (min: {_minSwipeDistance})");
 
-        Vector2 direction = GetSwipeDirection(delta);
-        OnSwipe?.Invoke(direction);
-    }
+        // Check minimum distance
+        if (distance < _minSwipeDistance)
+        {
+            Debug.Log($"[TouchInput] ⚠️ Swipe TOO SHORT! Need at least {_minSwipeDistance} pixels");
+            return;
+        }
 
-    /// <summary>
-    /// Xác định hướng swipe
-    /// </summary>
-    private Vector2 GetSwipeDirection(Vector2 delta)
-    {
+        // Determine direction
+        Vector2 direction;
+        string directionName;
+
         if (Mathf.Abs(delta.x) > Mathf.Abs(delta.y))
         {
-            return delta.x > 0 ? Vector2.right : Vector2.left;
+            // Horizontal swipe
+            if (delta.x > 0)
+            {
+                direction = Vector2.right;
+                directionName = "RIGHT →";
+            }
+            else
+            {
+                direction = Vector2.left;
+                directionName = "LEFT ←";
+            }
         }
         else
         {
-            return delta.y > 0 ? Vector2.up : Vector2.down;
+            // Vertical swipe
+            if (delta.y > 0)
+            {
+                direction = Vector2.up;
+                directionName = "UP ↑";
+            }
+            else
+            {
+                direction = Vector2.down;
+                directionName = "DOWN ↓";
+            }
         }
+
+        Debug.Log($"[TouchInput] ✅ SWIPE {directionName} detected!");
+
+        // Trigger event
+        if (OnSwipe == null)
+        {
+            Debug.LogError("[TouchInput] ❌ ERROR: OnSwipe event has NO listeners!");
+            Debug.LogError("Did you forget to subscribe in GameManager?");
+            return;
+        }
+
+        Debug.Log($"[TouchInput] 🎯 Invoking OnSwipe({direction})...");
+        OnSwipe.Invoke(direction);
+        Debug.Log($"[TouchInput] ✅ Event invoked successfully!");
     }
 }

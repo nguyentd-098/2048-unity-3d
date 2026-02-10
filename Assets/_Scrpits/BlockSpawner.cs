@@ -1,6 +1,5 @@
-﻿using System.Collections.Generic;
-using UnityEditor.Experimental.GraphView;
-using UnityEngine;
+﻿using UnityEngine;
+using System.Collections.Generic;
 
 // ============================================
 // BLOCK SPAWNER - Tuân thủ SRP
@@ -20,14 +19,16 @@ public class BlockSpawner : MonoBehaviour, IBlockFactory
 
     private IGridManager _gridManager;
     private IAudioService _audioService;
+    private IScoreService _scoreService; // ← Thêm này!
 
     /// <summary>
     /// Khởi tạo spawner với dependencies
     /// </summary>
-    public void Initialize(IGridManager gridManager, IAudioService audioService)
+    public void Initialize(IGridManager gridManager, IAudioService audioService, IScoreService scoreService)
     {
         _gridManager = gridManager;
         _audioService = audioService;
+        // Lưu scoreService nếu cần dùng để tính điểm khi spawn (nếu có logic đó)
     }
 
     /// <summary>
