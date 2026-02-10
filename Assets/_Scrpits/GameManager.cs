@@ -35,6 +35,8 @@ public class GameManager : MonoBehaviour
         Debug.Log("==============================================");
 
         AutoFindDependencies();
+        // Đăng ký sự kiện: Khi MoveController báo xong, thì chạy SyncBlocks
+        _moveController.OnMoveComplete += OnMoveFinished;
     }
 
     void Start()
@@ -44,6 +46,20 @@ public class GameManager : MonoBehaviour
         Debug.Log("==============================================");
 
         InitializeGame();
+
+
+    }
+
+    private void OnMoveFinished()
+    {
+        // 1. Cập nhật lại danh sách "sạch" từ Grid
+        SyncBlocksFromGrid();
+
+        // 2. Sau đó mới thực hiện các logic tiếp theo như Spawn block mới
+        SpawnAfterMove();
+
+        // 3. Kiểm tra thắng/thua
+        CheckGameStatus();
     }
 
     private void AutoFindDependencies()
@@ -264,28 +280,12 @@ public class GameManager : MonoBehaviour
 
     private void HandleSwipe(Vector2 direction)
     {
-        Debug.Log("==============================================");
-        Debug.Log($"[GameManager] 👆 HandleSwipe called!");
-        Debug.Log($"Direction: {direction}");
-        Debug.Log($"State: {_state}");
-        Debug.Log($"Blocks count: {_blocks.Count}");
-        Debug.Log("==============================================");
+        // 1. Lọc bỏ các Block null hoặc đã bị destroy trước khi xử lý
+        _blocks.RemoveAll(b => b == null);
 
-        if (_state != GameState.WaitingInput)
-        {
-            Debug.LogWarning($"[GameManager] ⚠️ Cannot move! State is {_state}, not WaitingInput");
-            return;
-        }
+        if (_blocks.Count == 0) return;
 
-        if (_blocks.Count == 0)
-        {
-            Debug.LogError("[GameManager] ❌ Blocks list is EMPTY!");
-            return;
-        }
-
-        Debug.Log($"[GameManager] ✅ Calling MoveController.Move() with {_blocks.Count} blocks");
-
-        ChangeState(GameState.Moving);
+        // 2. Gọi move với danh sách sạch
         _moveController.Move(direction, _blocks);
     }
 
@@ -298,7 +298,7 @@ public class GameManager : MonoBehaviour
 
         _blocks.RemoveAll(b => b == null);
 
-        CheckGameEnd();
+        CheckGameStatus();
     }
 
     private void OnBlockMerged(int newValue)
@@ -314,51 +314,112 @@ public class GameManager : MonoBehaviour
         }
     }
 
-    private void CheckGameEnd()
+    private void CheckGameStatus()
     {
-        if (_gridManager.EmptyNodeCount == 0 && !CanMove())
+        // 1. Kiểm tra THẮNG: Tìm xem có block nào đạt giá trị 2048 chưa
+        // Chỉ kiểm tra nếu chưa thắng trước đó
+        if (!_hasWon)
         {
-            Debug.Log("[GameManager] 💀 GAME OVER - No moves left!");
-            ChangeState(GameState.GameOver);
-            return;
+            foreach (var block in _blocks)
+            {
+                if (block != null && block.Value >= _winValue)
+                {
+                    _hasWon = true;
+                    _state = GameState.Win;
+                    _uiManager.ShowWinScreen();
+                    _audioManager.PlayWin();
+                    return; // Thoát hàm vì đã thắng
+                }
+            }
         }
 
-        ChangeState(GameState.WaitingInput);
+        // 2. Kiểm tra THUA: Nếu hết ô trống VÀ không thể di chuyển được nữa
+        if (_gridManager.EmptyNodeCount == 0 && !CanMove())
+        {
+            _state = GameState.GameOver;
+            _uiManager.ShowLoseScreen();
+            _audioManager.PlayGameOver();
+            Debug.Log("Game Over!");
+        }
+        else
+        {
+            // Nếu vẫn còn chơi được, cho phép nhận Input tiếp theo
+            _state = GameState.WaitingInput;
+        }
+    }
+    private void SyncBlocksFromGrid()
+    {
+        _blocks.Clear(); // Xóa sạch danh sách cũ
+
+        // Duyệt qua toàn bộ các ô (Node) trên Grid
+        for (int x = 0; x < _gridManager.Width; x++)
+        {
+            for (int y = 0; y < _gridManager.Height; y++)
+            {
+                var node = _gridManager.GetNodeAt(new Vector2(x, y));
+
+                // Nếu ô này có chứa Block, hãy thêm nó vào danh sách quản lý
+                if (node != null && node.OccupiedBlock != null)
+                {
+                    _blocks.Add(node.OccupiedBlock);
+                }
+            }
+        }
+
+        if (_showDebugLog) Debug.Log($"[GameManager] Synced {_blocks.Count} blocks from grid.");
+    }
+
+    private void SpawnAfterMove()
+    {
+        // Chỉ spawn nếu Grid còn chỗ trống
+        if (_gridManager.EmptyNodeCount > 0)
+        {
+            // Thường 2048 sẽ spawn 1 block mỗi lượt di chuyển
+            var newBlocks = _blockSpawner.SpawnBlocks(1);
+
+            // Thêm các block mới vào danh sách quản lý
+            foreach (var b in newBlocks)
+            {
+                _blocks.Add(b);
+            }
+
+            if (_showDebugLog) Debug.Log("[GameManager] Spawned new block.");
+        }
     }
 
     private bool CanMove()
     {
-        for (int y = 0; y < _gridManager.Height; y++)
-        {
-            for (int x = 0; x < _gridManager.Width - 1; x++)
-            {
-                var node1 = _gridManager.GetNodeAt(new Vector2(x, y));
-                var node2 = _gridManager.GetNodeAt(new Vector2(x + 1, y));
-
-                if (node1.OccupiedBlock != null && node2.OccupiedBlock != null)
-                {
-                    if (node1.OccupiedBlock.Value == node2.OccupiedBlock.Value)
-                        return true;
-                }
-            }
-        }
-
+        // Duyệt qua từng ô trên Grid
         for (int x = 0; x < _gridManager.Width; x++)
         {
-            for (int y = 0; y < _gridManager.Height - 1; y++)
+            for (int y = 0; y < _gridManager.Height; y++)
             {
-                var node1 = _gridManager.GetNodeAt(new Vector2(x, y));
-                var node2 = _gridManager.GetNodeAt(new Vector2(x, y + 1));
+                Node currentNode = _gridManager.GetNodeAt(new Vector2(x, y));
+                if (currentNode == null || currentNode.OccupiedBlock == null) continue;
 
-                if (node1.OccupiedBlock != null && node2.OccupiedBlock != null)
+                int currentVal = currentNode.OccupiedBlock.Value;
+
+                // Kiểm tra 4 hướng xung quanh ô hiện tại
+                Vector2[] directions = { Vector2.right, Vector2.left, Vector2.up, Vector2.down };
+
+                foreach (Vector2 dir in directions)
                 {
-                    if (node1.OccupiedBlock.Value == node2.OccupiedBlock.Value)
+                    Node neighbor = _gridManager.GetNodeAt(new Vector2(x + dir.x, y + dir.y));
+
+                    // Nếu có ô hàng xóm trống -> Vẫn di chuyển được
+                    if (neighbor != null && neighbor.OccupiedBlock == null)
                         return true;
+
+                    // Nếu ô hàng xóm có block cùng giá trị -> Vẫn merge được
+                    if (neighbor != null && neighbor.OccupiedBlock != null)
+                    {
+                        if (neighbor.OccupiedBlock.Value == currentVal)
+                            return true;
+                    }
                 }
             }
         }
-
-        return false;
+        return false; // Không còn nước đi nào
     }
 
     public void ContinueGame()
@@ -381,5 +442,6 @@ public enum GameState
 {
     WaitingInput,
     Moving,
-    GameOver
+    GameOver,
+    Win
 }

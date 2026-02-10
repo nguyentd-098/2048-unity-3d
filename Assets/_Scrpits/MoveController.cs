@@ -78,6 +78,7 @@ public class MoveController : MonoBehaviour
         foreach (var block in orderedBlocks)
         {
             Vector2 oldPos = block.Position;
+            if (block == null) continue;
             CalculateNewPosition(block, direction);
 
             if (block.Position != oldPos)
@@ -96,12 +97,16 @@ public class MoveController : MonoBehaviour
     /// </summary>
     private IEnumerable<Block> GetOrderedBlocks(List<Block> blocks, Vector2 direction)
     {
-        IEnumerable<Block> ordered = blocks.OrderBy(b => b.Position.x).ThenBy(b => b.Position.y);
-
-        if (direction == Vector2.right || direction == Vector2.up)
-            ordered = ordered.Reverse();
-
-        return ordered;
+        if (direction == Vector2.left || direction == Vector2.right)
+        {
+            var ordered = blocks.OrderBy(b => b.Node.Pos.x);
+            return direction == Vector2.right ? ordered.Reverse() : ordered;
+        }
+        else
+        {
+            var ordered = blocks.OrderBy(b => b.Node.Pos.y);
+            return direction == Vector2.up ? ordered.Reverse() : ordered;
+        }
     }
 
     /// <summary>
